@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Anchors</title>
+<style>
+  :root{
+    --paper:#1B1230;
+    --ink:#FFFFFF;
+    --ink-soft:rgba(255,255,255,0.72);
+    --line:rgba(255,255,255,0.22);
+    --dawn-1:#4B2E73;
+    --dawn-2:#D2543F;
+    --dawn-3:#F2A93B;
+    --check:#E1954B;
+    --madrid:#9DB2F5;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:linear-gradient(180deg,#1B1230 0%,#5A2A4D 45%,#B85238 85%,#D2663F 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+    min-height:100vh;
+  }
+  .sheet{width:100%; max-width:480px;}
+  .arc{
+    height:6px;
+    border-radius:3px;
+    background:linear-gradient(90deg,var(--dawn-1) 0%,var(--dawn-2) 55%,var(--dawn-3) 100%);
+    margin-bottom:22px;
+  }
+  h1{font-size:28px; font-weight:600; margin:0 0 2px; letter-spacing:0.2px;}
+  .sub{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:var(--ink-soft); font-size:13px; margin-bottom:18px;
+  }
+
+  .toggle-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  .toggle-row.hidden{display:none;}
+  .toggle-btn{
+    flex:1;
+    padding:10px 8px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    font-size:13px;
+    cursor:pointer;
+    text-align:center;
+  }
+  .toggle-btn.active{
+    border-color:var(--ink);
+    color:var(--ink);
+    background:rgba(255,255,255,0.10);
+    font-weight:600;
+  }
+  .toggle-btn.madrid-active{
+    border-color:var(--madrid);
+    color:var(--madrid);
+    background:rgba(157,178,245,0.15);
+  }
+
+  .progress-wrap{
+    margin-top:14px;
+    margin-bottom:22px;
+  }
+  .progress-label{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .progress-track{
+    height:8px;
+    border-radius:4px;
+    background:var(--line);
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    border-radius:4px;
+    background:linear-gradient(90deg,var(--dawn-2),var(--dawn-3));
+    width:0%;
+    transition:width .25s ease;
+  }
+
+  .streak{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:22px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px;
+  }
+  .streak b{color:var(--dawn-2); font-size:15px;}
+
+  .item{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .item:last-of-type{border-bottom:none;}
+  .box{
+    flex:none; width:24px; height:24px; margin-top:2px;
+    border:2px solid var(--ink-soft);
+    border-radius:6px;
+    cursor:pointer;
+    position:relative;
+    background:transparent;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .box.on{background:var(--check); border-color:var(--check);}
+  .box.on::after{
+    content:""; position:absolute; left:6px; top:2px;
+    width:6px; height:11px;
+    border:solid #FFFFFF;
+    border-width:0 2px 2px 0;
+    transform:rotate(40deg);
+  }
+  .text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  .label{font-size:16px; font-weight:600; line-height:1.35;}
+  .note{font-size:13px; color:var(--ink-soft); margin-top:3px; line-height:1.4;}
+  .item.on .label{color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--line);}
+
+  .actions{margin-top:28px; display:flex; gap:10px;}
+  button.act{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:13px; padding:9px 16px; border-radius:7px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-soft); cursor:pointer;
+  }
+  button.act:hover{border-color:var(--ink-soft); color:var(--ink);}
+
+  footer{
+    margin-top:28px;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:12px; color:var(--ink-soft); line-height:1.5;
+  }
+
+  @media print{
+    :root{
+      --ink:#2B2620;
+      --ink-soft:#6B6255;
+      --line:#DDD2BC;
+    }
+    body{padding:0; background:white;}
+    .actions{display:none;}
+    .toggle-row{display:none;}
+    .arc{background:linear-gradient(90deg,#444 0%,#777 55%,#aaa 100%);}
+    .box.on{background:#999; border-color:#999;}
+    .box.on::after{border-color:white;}
+    .progress-fill{background:#888;}
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="arc"></div>
+    <h1>Daily Anchors</h1>
+    <div class="sub"><span id="date-label"></span></div>
+
+    <div class="toggle-row" id="level-row">
+      <button class="toggle-btn" id="btn-starter">Starter</button>
+      <button class="toggle-btn" id="btn-full">Full</button>
+    </div>
+
+    <div class="toggle-row" id="mode-row">
+      <button class="toggle-btn" id="btn-normal">Normal day</button>
+      <button class="toggle-btn" id="btn-madrid">Madrid night</button>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Today</span><span id="progress-pct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <div class="streak" id="streak-label">Loading streak…</div>
+
+    <div id="items"></div>
+
+    <div class="actions">
+      <button class="act" id="print-btn">Print</button>
+      <button class="act" id="reset-btn">Uncheck this list</button>
+    </div>
+
+    <footer id="footer-note"></footer>
+  </div>
+
+<script>
+const STARTER_ANCHORS = [
+  {id:'ready', label:'Up by 7, bathed & ready', note:'Before phone or food — this is the one that flips the whole day active.'},
+  {id:'study1', label:'Study block #1 done', note:'Even 30–45 min counts. Starting right after getting ready is what matters.'},
+  {id:'moved', label:'Moved today', note:'Walk, Body Combat, anything — just not zero.'},
+  {id:'sleep', label:'Asleep by ~11:30', note:'Protects tomorrow\'s wake time.'}
+];
+
+const NORMAL_ANCHORS = [
+  {id:'wake', label:'7:00 — Wake, green tea, bath & get ready', note:'This is the one that flips the whole day active.'},
+  {id:'study1', label:'8:00–9:00 — Study block #1: Lectures', note:'New material, right after getting ready, before food.'},
+  {id:'breakfast', label:'9:00–9:30 — Breakfast', note:''},
+  {id:'study2', label:'9:30–12:30 — Study block #2: Practice of today\'s lecture', note:'Working through what you just learned. Split with a short break.'},
+  {id:'lunch', label:'1:00–3:00 — Lunch + family time', note:'Flexible window.'},
+  {id:'misc', label:'3:00–4:30 — Misc/free study', note:'Goodfellow book, ML refreshers, or whatever you\'re curious about — no agenda.'},
+  {id:'exercise', label:'4:30–6:30 — Exercise slot', note:'Body Combat XR when you feel it, otherwise rest or a lighter option.'},
+  {id:'sunset', label:'~Sunset — Walk or wind-down', note:'Either the 10k-step walk or a post-workout cool-down.'},
+  {id:'study3', label:'7:30–9:00 — Study block #3: Hands-on practice', note:'Gradio, RAG, fine-tuning, structured output, Pandas/NumPy/PyTorch, agentic course.'},
+  {id:'dinner', label:'9:00–10:30 — Dinner + family time', note:''},
+  {id:'sleep', label:'10:30–11:30 — Wind down, talk with wife, sleep', note:'Protects tomorrow\'s 7am wake.'}
+];
+
+const MADRID_ANCHORS = [
+  {id:'evening', label:'Normal evening up to kickoff', note:'Dinner, family/leisure as usual — nothing changes until the match.'},
+  {id:'watched', label:'12:30–2:30am — Watched Madrid live', note:'No highlights, ever. This is the whole point of tonight.'},
+  {id:'slept', label:'Slept after the match', note:'No fixed wake time tonight.'},
+  {id:'wake', label:'~9:00–9:30am — Woke later, bathed & ready', note:'Later start is the trade-off for watching live.'},
+  {id:'study', label:'One compressed study session', note:'A single session, not the usual two blocks — whatever fits.'},
+  {id:'meal', label:'Breakfast/lunch combined + family time', note:''},
+  {id:'nap', label:'Afternoon — nap to cover sleep debt', note:'Replaces the exercise slot today.'},
+  {id:'moved', label:'Light movement, if energy allows', note:'No pressure on a short-sleep day.'},
+  {id:'dinner', label:'Dinner', note:''},
+  {id:'reset', label:'Evening wind-down, reset toward 11:30 sleep', note:'Back to the normal rhythm tonight.'}
+];
+
+function todayKey(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// "today" and its derived strings are refreshed by tick() so the page stays live across midnight.
+let today = new Date();
+let dateStr = todayKey(today);
+
+const dateLabelEl = document.getElementById('date-label');
+const itemsEl = document.getElementById('items');
+const API = '/.netlify/functions/anchors';
+
+async function apiGet(key){
+  const res = await fetch(`${API}?action=get&key=${encodeURIComponent(key)}`);
+  if(!res.ok) throw new Error('get failed');
+  return res.json(); // {key, value}
+}
+async function apiSet(key, value){
+  const res = await fetch(API, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({key, value})
+  });
+  if(!res.ok) throw new Error('set failed');
+  return res.json();
+}
+async function apiListKeys(prefix){
+  const res = await fetch(`${API}?action=list&prefix=${encodeURIComponent(prefix)}`);
+  if(!res.ok) throw new Error('list failed');
+  const data = await res.json();
+  return data.keys || [];
+}
+
+const btnStarter = document.getElementById('btn-starter');
+const btnFull = document.getElementById('btn-full');
+const btnNormal = document.getElementById('btn-normal');
+const btnMadrid = document.getElementById('btn-madrid');
+const modeRow = document.getElementById('mode-row');
+const footerNote = document.getElementById('footer-note');
+
+let level = 'full';   // 'starter' | 'full' — each keeps its own independent checklist
+let mode = 'normal';  // 'normal' | 'madrid' — only meaningful within 'full'
+let checks = {};      // checks for whichever track is currently displayed
+
+function currentAnchors(){
+  if(level === 'starter') return STARTER_ANCHORS;
+  return mode === 'madrid' ? MADRID_ANCHORS : NORMAL_ANCHORS;
+}
+
+// Each combination is its own independent track — switching never touches another track's saved data.
+function currentTrackKey(forDateStr){
+  const d = forDateStr || dateStr;
+  if(level === 'starter') return `track:starter:${d}`;
+  return `track:full-${mode}:${d}`;
+}
+
+function render(){
+  const anchors = currentAnchors();
+
+  btnStarter.classList.toggle('active', level==='starter');
+  btnFull.classList.toggle('active', level==='full');
+  modeRow.classList.toggle('hidden', level!=='full');
+  btnNormal.classList.toggle('active', mode==='normal');
+  btnMadrid.classList.toggle('active', false);
+  btnMadrid.classList.toggle('madrid-active', mode==='madrid');
+
+  if(level === 'starter'){
+    footerNote.textContent = "Four things worth protecting while the rest of the routine settles in. Switch to Full once these feel automatic.";
+  } else if(mode === 'madrid'){
+    footerNote.textContent = "Match night is a planned exception, not a miss — it doesn't break your streak, it just sits outside it.";
+  } else {
+    footerNote.textContent = "The complete day, block by block.";
+  }
+
+  itemsEl.innerHTML = '';
+  anchors.forEach(a=>{
+    const on = !!checks[a.id];
+    const row = document.createElement('div');
+    row.className = 'item' + (on?' on':'');
+    row.innerHTML = `
+      <div class="box ${on?'on':''}" data-id="${a.id}"></div>
+      <div class="text">
+        <div class="label">${a.label}</div>
+        ${a.note ? `<div class="note">${a.note}</div>` : ''}
+      </div>`;
+    row.querySelector('.box').addEventListener('click', ()=>toggle(a.id));
+    itemsEl.appendChild(row);
+  });
+
+  updateProgress();
+}
+
+function updateProgress(){
+  const anchors = currentAnchors();
+  const total = anchors.length;
+  const done = anchors.filter(a=>checks[a.id]).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+async function save(){
+  try{
+    await apiSet(currentTrackKey(), JSON.stringify(checks));
+    if(level === 'full'){
+      // Records which mode was the "real" one for today, so streak history can tell
+      // normal days and skipped Madrid nights apart without touching either track's data.
+      await apiSet(`full-active-mode:${dateStr}`, mode);
+    }
+  }catch(e){ console.error('save failed', e); }
+}
+
+async function loadTrack(){
+  try{
+    const res = await apiGet(currentTrackKey());
+    checks = (res && res.value) ? JSON.parse(res.value) : {};
+  }catch(e){
+    checks = {};
+  }
+}
+
+async function toggle(id){
+  checks[id] = !checks[id];
+  render();
+  await save();
+  computeStreak();
+}
+
+async function setLevel(newLevel){
+  if(level === newLevel) return;
+  level = newLevel;
+  await loadTrack(); // pulls that track's own saved state back in — never resets it
+  render();
+  computeStreak();
+}
+
+async function setMode(newMode){
+  if(mode === newMode) return;
+  mode = newMode;
+  await loadTrack();
+  render();
+  computeStreak();
+}
+
+async function load(){
+  await loadTrack();
+  render();
+  computeStreak();
+}
+
+async function computeStreak(){
+  const streakEl = document.getElementById('streak-label');
+  try{
+    if(level === 'starter'){
+      const keyList = await apiListKeys('track:starter:');
+      const keys = new Set(keyList);
+      let streak = 0;
+      let cursor = new Date(today);
+      const todayAllDone = STARTER_ANCHORS.every(a=>checks[a.id]);
+      if(!todayAllDone) cursor.setDate(cursor.getDate()-1);
+
+      while(true){
+        const k = `track:starter:${todayKey(cursor)}`;
+        if(!keys.has(k)) break;
+        let dayChecks = {};
+        try{
+          const res = await apiGet(k);
+          if(res && res.value) dayChecks = JSON.parse(res.value);
+        }catch(e){}
+        if(!STARTER_ANCHORS.every(a=>dayChecks[a.id])) break;
+        streak++;
+        cursor.setDate(cursor.getDate()-1);
+      }
+      if(todayAllDone) streak++;
+
+      streakEl.innerHTML = streak>0
+        ? `<b>${streak}</b> day${streak===1?'':'s'} in a row, all anchors checked.`
+        : `No streak yet — check off today's anchors to start one.`;
+      return;
+    }
+
+    // level === 'full'
+    const activeModeKeys = new Set(await apiListKeys('full-active-mode:'));
+    let streak = 0;
+    let cursor = new Date(today);
+
+    const todayAllDone = currentAnchors().every(a=>checks[a.id]);
+    if(mode === 'madrid'){
+      cursor.setDate(cursor.getDate()-1); // Madrid nights sit outside the streak: neither break nor count it
+    } else if(!todayAllDone){
+      cursor.setDate(cursor.getDate()-1);
+    }
+
+    while(true){
+      const cKey = todayKey(cursor);
+      const markerKey = `full-active-mode:${cKey}`;
+      if(!activeModeKeys.has(markerKey)) break;
+
+      let activeMode = 'normal';
+      try{
+        const res = await apiGet(markerKey);
+        if(res && res.value) activeMode = res.value;
+      }catch(e){}
+
+      if(activeMode === 'madrid'){
+        cursor.setDate(cursor.getDate()-1);
+        continue; // skip over match nights without breaking the streak
+      }
+
+      let dayChecks = {};
+      try{
+        const res = await apiGet(`track:full-normal:${cKey}`);
+        if(res && res.value) dayChecks = JSON.parse(res.value);
+      }catch(e){}
+      if(!NORMAL_ANCHORS.every(a=>dayChecks[a.id])) break;
+      streak++;
+      cursor.setDate(cursor.getDate()-1);
+    }
+    if(mode !== 'madrid' && todayAllDone) streak++;
+
+    streakEl.innerHTML = streak>0
+      ? `<b>${streak}</b> day${streak===1?'':'s'} in a row, all anchors checked.`
+      : `No streak yet — check off today's anchors to start one.`;
+  }catch(e){
+    streakEl.textContent = '';
+  }
+}
+
+function updateDateLabel(){
+  dateLabelEl.textContent = today.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
+}
+
+// Keeps the date genuinely live: if the tab stays open past midnight, the tracker
+// rolls over to the new day's (empty, unless already used) track automatically.
+async function tick(){
+  const nowKey = todayKey(new Date());
+  if(nowKey !== dateStr){
+    today = new Date();
+    dateStr = nowKey;
+    updateDateLabel();
+    await loadTrack();
+    render();
+    computeStreak();
+  }
+}
+setInterval(tick, 30000);
+
+btnStarter.addEventListener('click', ()=>setLevel('starter'));
+btnFull.addEventListener('click', ()=>setLevel('full'));
+btnNormal.addEventListener('click', ()=>setMode('normal'));
+btnMadrid.addEventListener('click', ()=>setMode('madrid'));
+document.getElementById('print-btn').addEventListener('click', ()=>window.print());
+document.getElementById('reset-btn').addEventListener('click', async ()=>{
+  checks = {};
+  render();
+  await save();
+  computeStreak();
+});
+
+updateDateLabel();
+load();
+</script>
+</body>
+</html>
